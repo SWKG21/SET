@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="colorPrimary">#3F51B5</color>
+    <color name="colorPrimaryDark">#303F9F</color>
+    <color name="colorAccent">#FF4081</color>
+    <color name="colorCard">#FFFFFFFF</color>
+    <color name="colorSelected">#FF0000FF</color>
+    <color name="colorSET">#B4EEB4</color>
+    <color name="colorNOTSET">#FFC1C1</color>
+    <color name="colorSETaround">#00FF00</color>
+    <color name="colorNOTSETaround">#FF0000</color>
+</resources>
