@@ -3,26 +3,33 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context="com.example.set.MultiActivity"
     android:orientation="vertical"
     android:gravity="center_vertical"
-    android:paddingTop="10dp"
-    android:paddingBottom="10dp">
+    tools:context="com.example.set.JoinActivity">
 
-    <Button
-        android:id="@+id/btnCreate"
+    <TextView
+        android:id="@+id/clientIP"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:hint="CLIENT IP"
         android:layout_gravity="center_horizontal"
-        android:text="CREATE"
+        android:layout_marginBottom="10dp"/>
+
+    <EditText
+        android:id="@+id/serverIP"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="ENTER SERVER IP TO CONNECT"
+        android:layout_gravity="center_horizontal"
+        android:layout_marginTop="10dp"
         android:layout_marginBottom="10dp"/>
 
     <Button
-        android:id="@+id/btnJoin"
+        android:id="@+id/btnStart"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:text="CONNECT"
         android:layout_gravity="center_horizontal"
-        android:text="JOIN"
         android:layout_marginTop="10dp"/>
 
 </LinearLayout>

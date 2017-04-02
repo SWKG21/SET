@@ -49,7 +49,7 @@ public class StartActivity extends AppCompatActivity {
                 Intent it = new Intent(StartActivity.this, MultiActivity.class);
                 startActivity(it);
 
-                new Thread(){
+                /*new Thread(){
                     @Override
                     public void run(){
                         try{
@@ -58,11 +58,11 @@ public class StartActivity extends AppCompatActivity {
                             e.printStackTrace();
                         }
                     }
-                }.start();
+                }.start();*/
             }
 
-            private void acceptServer() throws IOException {
-                Socket socket = new Socket("127.0.0.1", 12345);
+            /*private void acceptServer() throws IOException {
+                Socket socket = new Socket("192.168.1.175", 12345);
                 OutputStream os = socket.getOutputStream();
                 PrintWriter pw = new PrintWriter(os);
 
@@ -72,7 +72,7 @@ public class StartActivity extends AppCompatActivity {
                 pw.flush();
                 socket.shutdownOutput();
                 socket.close();
-            }
+            }*/
         });
 
 
