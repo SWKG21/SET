@@ -1,11 +1,11 @@
 package com.example.set;
 
-import android.content.Intent;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.os.Handler;
 import android.os.Message;
 import android.support.v4.content.res.ResourcesCompat;
+import android.support.v4.util.Pair;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
@@ -30,10 +30,13 @@ import java.net.NetworkInterface;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketException;
-import java.net.UnknownHostException;
 import java.text.DecimalFormat;
+import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.LinkedList;
+import java.util.List;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 public class CreateActivity extends AppCompatActivity {
 
@@ -42,6 +45,8 @@ public class CreateActivity extends AppCompatActivity {
     private int selectedCount = 0;
     private LinkedList<CardPanel> imgs = new LinkedList<>();
     LinkedList<CardPanel> imgsSelected = new LinkedList<>();
+    LinkedList<Integer> forImgsSelected = new LinkedList<>();
+    private Lock myLock = new ReentrantLock();
     private TextView textTime;
     private int recLen = 0;
     private TextView textScore;
@@ -84,12 +89,13 @@ public class CreateActivity extends AppCompatActivity {
     private TextView clientIP = null;
     private Button btnAcept = null;
     private Button btnStart = null;
-    private Socket socket;
+    private List<Socket> mList = new ArrayList<>();
     private ServerSocket mServerSocket = null;
+    private static final int PORT = 40012;
     private boolean running = false;
-    private AcceptThread mAcceptThread;
-    private ReceiveThread mReceiveThread;
-    private Handler mHandler = null;
+    private Handler mHandler = new MyHandler();;
+    private LinkedList<Pair<String, String>> resultList = new LinkedList<>();
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -100,17 +106,17 @@ public class CreateActivity extends AppCompatActivity {
         clientIP = (TextView) findViewById(R.id.clientIP);
         btnAcept = (Button) findViewById(R.id.btnAccept);
         btnStart = (Button) findViewById(R.id.btnStart);
-        mHandler = new MyHandler();
         btnStart.setEnabled(false);
 
         //button for creating the server
         btnAcept.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                mAcceptThread = new AcceptThread();
+                AcceptThread mAcceptThread = new AcceptThread();
                 running = true;
                 mAcceptThread.start();
                 serverIP.setText(getLocalIpAddress());
+                clientIP.setSingleLine(false);
                 clientIP.setText("WAITING FOR CLIENT...");
                 btnAcept.setEnabled(false);
                 btnStart.setEnabled(true);
@@ -121,14 +127,7 @@ public class CreateActivity extends AppCompatActivity {
         btnStart.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                OutputStream os = null;
-                try {
-                    os = socket.getOutputStream();
-                    os.write(("start_game"+"\n").getBytes("utf-8"));
-                    os.flush();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
+                ServerSend("start game");
                 ViewGroup layout = (ViewGroup) btnStart.getParent();
                 layout.removeView(serverIP);
                 layout.removeView(clientIP);
@@ -139,43 +138,28 @@ public class CreateActivity extends AppCompatActivity {
         });
     }
 
-    public String getLocalIpAddress() {
-        try {
-            for (Enumeration<NetworkInterface> en = NetworkInterface
-                    .getNetworkInterfaces(); en.hasMoreElements();) {
-                NetworkInterface intf = en.nextElement();
-                for (Enumeration<InetAddress> enumIpAddr = intf
-                        .getInetAddresses(); enumIpAddr.hasMoreElements();) {
-                    InetAddress inetAddress = enumIpAddr.nextElement();
-                    if (inetAddress instanceof Inet4Address && !inetAddress.isLoopbackAddress()) {
-                        return inetAddress.getHostAddress();
-                    }
-                }
-            }
-        } catch (SocketException ex) {
-            Log.e("WifiPreference Ip", ex.toString());
-        }
-        return null;
-    }
+
 
     private class AcceptThread extends Thread{
         @Override
         public void run() {
             try {
-                mServerSocket = new ServerSocket(40012);
-                socket = mServerSocket.accept();
-                try {
-                    sleep(500);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
+                mServerSocket = new ServerSocket(PORT);
+                while(true){
+                    Socket client = mServerSocket.accept();
+                    mList.add(client);
+                    try {
+                        sleep(500);
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                    Message msg = mHandler.obtainMessage();
+                    msg.what = 0;
+                    msg.obj = client.getInetAddress().getHostAddress();
+                    mHandler.sendMessage(msg);
+                    ReceiveThread mReceiveThread = new ReceiveThread(client);
+                    mReceiveThread.start();
                 }
-
-                Message msg = mHandler.obtainMessage();
-                msg.what = 0;
-                msg.obj = socket.getInetAddress().getHostAddress();
-                mHandler.sendMessage(msg);
-                mReceiveThread = new ReceiveThread(socket);
-                mReceiveThread.start();
             } catch (IOException e) {
                 e.printStackTrace();
             }
@@ -202,6 +186,29 @@ public class CreateActivity extends AppCompatActivity {
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
+                myLock.lock();
+                try{
+                    if(!resultList.isEmpty()){
+                        Pair<String, String> res = resultList.poll();
+                        String[] strs  = res.second.split(", ");
+                        for(int i=0;i<strs.length;i++)
+                            forImgsSelected.add(Integer.valueOf(strs[i]));
+                        //add to imgsSelected
+                        ConvertForImgsSelected();
+                        if(checkSET()) {
+                            ServerSend("client true "+res.first+" "+res.second);
+                            SETeffect();
+                        }
+                        else {
+                            ServerSend("client false " + res.first + " " + res.second);
+                            imgsSelected.clear();
+                            forImgsSelected.clear();
+                        }
+                        resultList.clear();
+                    }
+                } finally {
+                    myLock.unlock();
+                }
                 BufferedReader br = null;
                 try {
                     br = new BufferedReader(new InputStreamReader(is, "UTF-8"));
@@ -210,7 +217,6 @@ public class CreateActivity extends AppCompatActivity {
                 }
                 try {
                     read = br.readLine();//read line until \n or \r
-                    System.out.println(read);
                 } catch (IOException e) {
                     e.printStackTrace();
                 } catch (NullPointerException e) {
@@ -221,19 +227,18 @@ public class CreateActivity extends AppCompatActivity {
                     e.printStackTrace();
                     break;
                 }
-                //用Handler把读取到的信息发到主线程
-                Message msg = mHandler.obtainMessage();
-                msg.what = 1;
-                msg.obj = read;
-                mHandler.sendMessage(msg);
-
+                myLock.lock();
+                try{
+                    //用Handler把读取到的信息发到主线程
+                    Message msg = mHandler.obtainMessage();
+                    msg.what = 1;
+                    msg.obj = read;
+                    mHandler.sendMessage(msg);
+                } finally {
+                    myLock.unlock();
+                }
             }
         }
-    }
-
-    private void displayToast(String s)
-    {
-        Toast.makeText(this, s, Toast.LENGTH_SHORT).show();
     }
 
     class MyHandler extends Handler{//在主线程处理Handler传回来的message
@@ -242,16 +247,22 @@ public class CreateActivity extends AppCompatActivity {
             switch (msg.what){
                 case 1:
                     String str = (String) msg.obj;
+                    if(str.substring(0,6).equals("client")){
+                        //register IP and choice of client
+                        resultList.add(new Pair(str.substring(7,20),str.substring(22, str.length()-1)));
+                    }
                     break;
                 case 0:
-                    clientIP.setText("CLIENT "+msg.obj+" CONNECTED");
+                    String s = clientIP.getText().toString();
+                    clientIP.setText("CLIENT "+msg.obj+" CONNECTED"+"\n"+s);
                     displayToast("CONNEXION SUCCESS");
                     break;
                 case 2:
                     displayToast("CLIENT INTERRUPTED");
                     clientIP.setText(null);
                     try {
-                        socket.close();
+                        for(Socket socket : mList)
+                            socket.close();
                         mServerSocket.close();
                     } catch (IOException e) {
                         e.printStackTrace();
@@ -263,33 +274,13 @@ public class CreateActivity extends AppCompatActivity {
         }
     }
 
-    @Override
-    protected void onDestroy() {
-        super.onDestroy();
-        mHandler.removeCallbacksAndMessages(null);//清空消息队列，防止Handler强引用导致内存泄漏
-    }
-
-
     public void playAsServer(){
-        /*//this way doesn't work
-        ImageView img0 = (ImageView) findViewById(R.id.img0);
-        int valueOfCard0 = Cards.valueOf(1,1,1,1);
-        CardDrawable cd0 = new CardDrawable(valueOfCard0);
-        img0.setImageDrawable(cd0);
-        Canvas c = new Canvas();
-        cd0.draw(c);*/
 
         //generate 81 cards with the random order
         generateCardHeap();
 
         //send CardHeap to client
-        /*try {
-            String s0 = CardHeap.toString();
-            OutputStream os = socket.getOutputStream();
-            os.write(s0.getBytes());
-        } catch (IOException e) {
-            e.printStackTrace();
-        }*/
+        ServerSend("CardHeap"+CardHeap.toString());
 
         //show out the first 12 cards
         show12Cards();
@@ -348,6 +339,118 @@ public class CreateActivity extends AppCompatActivity {
         textScore.setTextColor(Color.BLACK);
     }
 
+    private void displayToast(String s)
+    {
+        Toast.makeText(this, s, Toast.LENGTH_SHORT).show();
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        mHandler.removeCallbacksAndMessages(null);//清空消息队列，防止Handler强引用导致内存泄漏
+    }
+
+    public String getLocalIpAddress() {
+        try {
+            for (Enumeration<NetworkInterface> en = NetworkInterface
+                    .getNetworkInterfaces(); en.hasMoreElements();) {
+                NetworkInterface intf = en.nextElement();
+                for (Enumeration<InetAddress> enumIpAddr = intf
+                        .getInetAddresses(); enumIpAddr.hasMoreElements();) {
+                    InetAddress inetAddress = enumIpAddr.nextElement();
+                    if (inetAddress instanceof Inet4Address && !inetAddress.isLoopbackAddress()) {
+                        return inetAddress.getHostAddress();
+                    }
+                }
+            }
+        } catch (SocketException ex) {
+            Log.e("WifiPreference Ip", ex.toString());
+        }
+        return null;
+    }
+
+    public void ServerSend(String s){
+        for(Socket socket : mList){
+            try {
+                OutputStream os = socket.getOutputStream();
+                os.write((s+"\n").getBytes("utf-8"));
+                os.flush();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    public void ConvertImgsSelected(){
+        for(CardPanel c : imgsSelected){
+            if(c.getId()==R.id.img0)
+                forImgsSelected.add(0);
+            if(c.getId()==R.id.img1)
+                forImgsSelected.add(1);
+            if(c.getId()==R.id.img2)
+                forImgsSelected.add(2);
+            if(c.getId()==R.id.img3)
+                forImgsSelected.add(3);
+            if(c.getId()==R.id.img4)
+                forImgsSelected.add(4);
+            if(c.getId()==R.id.img5)
+                forImgsSelected.add(5);
+            if(c.getId()==R.id.img6)
+                forImgsSelected.add(6);
+            if(c.getId()==R.id.img7)
+                forImgsSelected.add(7);
+            if(c.getId()==R.id.img8)
+                forImgsSelected.add(8);
+            if(c.getId()==R.id.img9)
+                forImgsSelected.add(9);
+            if(c.getId()==R.id.img10)
+                forImgsSelected.add(10);
+            if(c.getId()==R.id.img11)
+                forImgsSelected.add(11);
+            if(c.getId()==R.id.img12)
+                forImgsSelected.add(12);
+            if(c.getId()==R.id.img13)
+                forImgsSelected.add(13);
+            if(c.getId()==R.id.img14)
+                forImgsSelected.add(14);
+        }
+    }
+
+    public void ConvertForImgsSelected(){
+        for(int i : forImgsSelected){
+            if(i==0)
+                imgsSelected.add(img0);
+            if(i==1)
+                imgsSelected.add(img1);
+            if(i==2)
+                imgsSelected.add(img2);
+            if(i==3)
+                imgsSelected.add(img3);
+            if(i==4)
+                imgsSelected.add(img4);
+            if(i==5)
+                imgsSelected.add(img5);
+            if(i==6)
+                imgsSelected.add(img6);
+            if(i==7)
+                imgsSelected.add(img7);
+            if(i==8)
+                imgsSelected.add(img8);
+            if(i==9)
+                imgsSelected.add(img9);
+            if(i==10)
+                imgsSelected.add(img10);
+            if(i==11)
+                imgsSelected.add(img11);
+            if(i==12)
+                imgsSelected.add(img12);
+            if(i==13)
+                imgsSelected.add(img13);
+            if(i==14)
+                imgsSelected.add(img14);
+        }
+    }
+
     //the tips function
     class tipsClick implements View.OnClickListener{
         @Override
@@ -384,8 +487,25 @@ public class CreateActivity extends AppCompatActivity {
                     selectedCount++;
                     v.setClickable(true);
                     if(selectedCount==3){
-                        addSelected();
-                        checkSET();
+                        myLock.lock();
+                        try{
+                            addSelected();
+                            if(checkSET()){
+                                //send result of server to client
+                                ConvertImgsSelected();
+                                ServerSend("server true"+forImgsSelected.toString());
+                                //do effect
+                                selfSETeffect();
+                            }
+                            else{
+                                //send result of server to client
+                                ServerSend("server false");
+                                //do effect
+                                NOTSETeffect();
+                            }
+                        }finally {
+                            myLock.unlock();
+                        }
                     }
                 }
                 else
@@ -560,112 +680,192 @@ public class CreateActivity extends AppCompatActivity {
     }
 
     //check whether the combination of the 3 cards is SET
-    private void checkSET(){
-        if(Card.isSet(imgsSelected.get(0).card, imgsSelected.get(1).card, imgsSelected.get(2).card)){
-            //send result of server to client
-           /* try {
-                String s0 = "server true";
-                OutputStream os = socket.getOutputStream();
-                os.write(s0.getBytes());
-            } catch (IOException e) {
-                e.printStackTrace();
-            }*/
+    private boolean checkSET(){
+        return Card.isSet(imgsSelected.get(0).card, imgsSelected.get(1).card, imgsSelected.get(2).card);
+    }
 
-            //change to green if true
-            imgsSelected.get(0).setBackground(ResourcesCompat.getDrawable(getResources(), R.drawable.set, null));
-            imgsSelected.get(1).setBackground(ResourcesCompat.getDrawable(getResources(), R.drawable.set, null));
-            imgsSelected.get(2).setBackground(ResourcesCompat.getDrawable(getResources(), R.drawable.set, null));
+    private void selfSETeffect(){
+        //change to green if true
+        imgsSelected.get(0).setBackground(ResourcesCompat.getDrawable(getResources(), R.drawable.set, null));
+        imgsSelected.get(1).setBackground(ResourcesCompat.getDrawable(getResources(), R.drawable.set, null));
+        imgsSelected.get(2).setBackground(ResourcesCompat.getDrawable(getResources(), R.drawable.set, null));
 
-            //translate the 3 cards to the corner
-            CardPanel img_show0 = (CardPanel) findViewById(R.id.img_show0);
-            img_show0.card = imgsSelected.get(0).card;
-            Canvas c_show0 = new Canvas();
-            img_show0.card.draw(c_show0,img_show0.getWidth(),img_show0.getHeight());
+        //translate the 3 cards to the corner
+        CardPanel img_show0 = (CardPanel) findViewById(R.id.img_show0);
+        img_show0.card = imgsSelected.get(0).card;
+        Canvas c_show0 = new Canvas();
+        img_show0.card.draw(c_show0,img_show0.getWidth(),img_show0.getHeight());
 
-            CardPanel img_show1 = (CardPanel) findViewById(R.id.img_show1);
-            img_show1.card = imgsSelected.get(1).card;
-            Canvas c_show1 = new Canvas();
-            img_show1.card.draw(c_show1,img_show1.getWidth(),img_show1.getHeight());
+        CardPanel img_show1 = (CardPanel) findViewById(R.id.img_show1);
+        img_show1.card = imgsSelected.get(1).card;
+        Canvas c_show1 = new Canvas();
+        img_show1.card.draw(c_show1,img_show1.getWidth(),img_show1.getHeight());
 
-            CardPanel img_show2 = (CardPanel) findViewById(R.id.img_show2);
-            img_show2.card = imgsSelected.get(2).card;
-            Canvas c_show2 = new Canvas();
-            img_show2.card.draw(c_show2,img_show2.getWidth(),img_show2.getHeight());
+        CardPanel img_show2 = (CardPanel) findViewById(R.id.img_show2);
+        img_show2.card = imgsSelected.get(2).card;
+        Canvas c_show2 = new Canvas();
+        img_show2.card.draw(c_show2,img_show2.getWidth(),img_show2.getHeight());
 
-            Animation animation = AnimationUtils.loadAnimation(getApplicationContext(), R.anim.anim_set);
-            img_show0.startAnimation(animation);
-            img_show1.startAnimation(animation);
-            img_show2.startAnimation(animation);
+        Animation animation = AnimationUtils.loadAnimation(getApplicationContext(), R.anim.anim_set);
+        img_show0.startAnimation(animation);
+        img_show1.startAnimation(animation);
+        img_show2.startAnimation(animation);
 
-            new Handler().postDelayed(new Runnable() {
-                @Override
-                public void run() {
-                    //add 2 point
-                    score=score+2;
+        new Handler().postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                //add 2 point
+                score=score+2;
 
-                    //recover the color of 3 cards
-                    imgsSelected.get(0).setBackgroundColor(Color.WHITE);
-                    imgsSelected.get(1).setBackgroundColor(Color.WHITE);
-                    imgsSelected.get(2).setBackgroundColor(Color.WHITE);
+                //recover the color of 3 cards
+                imgsSelected.get(0).setBackgroundColor(Color.WHITE);
+                imgsSelected.get(1).setBackgroundColor(Color.WHITE);
+                imgsSelected.get(2).setBackgroundColor(Color.WHITE);
 
-                    //recover the status of selected cards
-                    imgsSelected.get(0).setSelected(false);
-                    imgsSelected.get(1).setSelected(false);
-                    imgsSelected.get(2).setSelected(false);
+                //recover the status of selected cards
+                imgsSelected.get(0).setSelected(false);
+                imgsSelected.get(1).setSelected(false);
+                imgsSelected.get(2).setSelected(false);
 
-                    //12(3 new) or 12(3 new)+3(new)=15 or 15-3(selected)=12 or 15-3(selected)+3(new)=15
-                    showThreeNewCards();
+                //12(3 new) or 12(3 new)+3(new)=15 or 15-3(selected)=12 or 15-3(selected)+3(new)=15
+                showThreeNewCards();
 
-                    //reclickable all 12 cards
-                    selectedCount = 0;
+                //reclickable all 12 cards
+                selectedCount = 0;
 
-                    //clear the list of selected card
-                    imgsSelected.clear();
+                //clear the list of selected card
+                imgsSelected.clear();
+                forImgsSelected.clear();
 
-                    //recover the tips function
-                    tips.setOnClickListener(new CreateActivity.tipsClick());
-                }
-            }, 1500);
+                //recover the tips function
+                tips.setOnClickListener(new CreateActivity.tipsClick());
+            }
+        }, 1500);
+    }
 
+    private void SETeffect(){
+        //change to green if true
+        imgsSelected.get(0).setBackground(ResourcesCompat.getDrawable(getResources(), R.drawable.set, null));
+        imgsSelected.get(1).setBackground(ResourcesCompat.getDrawable(getResources(), R.drawable.set, null));
+        imgsSelected.get(2).setBackground(ResourcesCompat.getDrawable(getResources(), R.drawable.set, null));
+
+        new Handler().postDelayed(new Runnable() {
+            @Override
+            public void run() {
+
+                //recover the color of 3 cards
+                imgsSelected.get(0).setBackgroundColor(Color.WHITE);
+                imgsSelected.get(1).setBackgroundColor(Color.WHITE);
+                imgsSelected.get(2).setBackgroundColor(Color.WHITE);
+
+                //recover the status of selected cards
+                imgsSelected.get(0).setSelected(false);
+                imgsSelected.get(1).setSelected(false);
+                imgsSelected.get(2).setSelected(false);
+
+                //12(3 new) or 12(3 new)+3(new)=15 or 15-3(selected)=12 or 15-3(selected)+3(new)=15
+                showThreeNewCards();
+
+                //reclickable all 12 cards
+                selectedCount = 0;
+
+                //clear the list of selected card
+                imgsSelected.clear();
+                forImgsSelected.clear();
+
+                //recover the tips function
+                tips.setOnClickListener(new CreateActivity.tipsClick());
+            }
+        }, 1500);
+
+        UNfreezeAll();
+    }
+
+    private void NOTSETeffect(){
+        //change to red if false
+        imgsSelected.get(0).setBackground(ResourcesCompat.getDrawable(getResources(), R.drawable.notset, null));
+        imgsSelected.get(1).setBackground(ResourcesCompat.getDrawable(getResources(), R.drawable.notset, null));
+        imgsSelected.get(2).setBackground(ResourcesCompat.getDrawable(getResources(), R.drawable.notset, null));
+
+        new Handler().postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                //reduce 2 point
+                score=score-2;
+                if(score<0)
+                    score=0;
+
+
+                //recover the color of 3 cards
+                imgsSelected.get(0).setBackgroundColor(Color.WHITE);
+                imgsSelected.get(1).setBackgroundColor(Color.WHITE);
+                imgsSelected.get(2).setBackgroundColor(Color.WHITE);
+
+                //reclickable all 12 cards
+                selectedCount = 0;
+
+                //recover the status of selected cards and clear the list of selected card
+                imgsSelected.get(0).setSelected(false);
+                imgsSelected.get(1).setSelected(false);
+                imgsSelected.get(2).setSelected(false);
+                imgsSelected.clear();
+                forImgsSelected.clear();
+
+                //recover the tips function
+                tips.setOnClickListener(new CreateActivity.tipsClick());
+            }
+        }, 1500);
+
+        freezeAll();
+    }
+
+    private void freezeAll(){
+        tips.setClickable(false);
+        img0.setClickable(false);
+        img1.setClickable(false);
+        img2.setClickable(false);
+        img3.setClickable(false);
+        img4.setClickable(false);
+        img5.setClickable(false);
+        img6.setClickable(false);
+        img7.setClickable(false);
+        img8.setClickable(false);
+        img9.setClickable(false);
+        img10.setClickable(false);
+        img11.setClickable(false);
+        if(img12!=null){
+            img12.setClickable(false);
+            img13.setClickable(false);
+            img14.setClickable(false);
         }
-        else{
-            //change to red if false
-            imgsSelected.get(0).setBackground(ResourcesCompat.getDrawable(getResources(), R.drawable.notset, null));
-            imgsSelected.get(1).setBackground(ResourcesCompat.getDrawable(getResources(), R.drawable.notset, null));
-            imgsSelected.get(2).setBackground(ResourcesCompat.getDrawable(getResources(), R.drawable.notset, null));
+    }
 
-            new Handler().postDelayed(new Runnable() {
-                @Override
-                public void run() {
-                    //reduce 2 point
-                    score=score-2;
-                    if(score<0)
-                        score=0;
-
-
-                    //recover the color of 3 cards
-                    imgsSelected.get(0).setBackgroundColor(Color.WHITE);
-                    imgsSelected.get(1).setBackgroundColor(Color.WHITE);
-                    imgsSelected.get(2).setBackgroundColor(Color.WHITE);
-
-                    //reclickable all 12 cards
-                    selectedCount = 0;
-
-                    //recover the status of selected cards and clear the list of selected card
-                    imgsSelected.get(0).setSelected(false);
-                    imgsSelected.get(1).setSelected(false);
-                    imgsSelected.get(2).setSelected(false);
-                    imgsSelected.clear();
-
-                    //recover the tips function
-                    tips.setOnClickListener(new CreateActivity.tipsClick());
-                }
-            }, 1500);
+    private void UNfreezeAll(){
+        tips.setClickable(true);
+        img0.setClickable(true);
+        img1.setClickable(true);
+        img2.setClickable(true);
+        img3.setClickable(true);
+        img4.setClickable(true);
+        img5.setClickable(true);
+        img6.setClickable(true);
+        img7.setClickable(true);
+        img8.setClickable(true);
+        img9.setClickable(true);
+        img10.setClickable(true);
+        img11.setClickable(true);
+        if(img12!=null){
+            img12.setClickable(true);
+            img13.setClickable(true);
+            img14.setClickable(true);
         }
     }
 
     //12(3 new) or 12(3 new)+3(new)=15 or 15-3(selected)=12 or 15-3(selected)+3(new)=15
     private void showThreeNewCards(){
+        if(CardHeap.size()<3){
+            ;//for ternimate???????????????????????????????????????????????????
+        }
         if(img12==null){
             if(imgsSelected.get(0).getId()==R.id.img0 || imgsSelected.get(1).getId()==R.id.img0 || imgsSelected.get(2).getId()==R.id.img0){
                 img0 = (CardPanel) findViewById(R.id.img0);

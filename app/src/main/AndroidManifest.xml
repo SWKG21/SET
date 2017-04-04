@@ -50,11 +50,6 @@
             android:name=".JoinActivity"
             android:theme="@style/AppTheme" >
         </activity>
-        <activity
-            android:name=".PlayAsServerActivity"
-            android:label="@string/title_activity_play_as_server" />
-        <activity android:name=".PlayAsClientActivity">
-        </activity>
     </application>
 
 </manifest>
