@@ -31,8 +31,7 @@
         </activity>
         <activity
             android:name=".MultiActivity"
-            android:theme="@style/AppTheme" >
-        </activity>
+            android:theme="@style/AppTheme"></activity>
         <activity
             android:name=".RuleActivity"
             android:theme="@style/AppTheme">
@@ -44,12 +43,11 @@
         </activity>
         <activity
             android:name=".CreateActivity"
-            android:theme="@style/AppTheme" >
-        </activity>
+            android:theme="@style/AppTheme"></activity>
         <activity
             android:name=".JoinActivity"
-            android:theme="@style/AppTheme" >
-        </activity>
+            android:theme="@style/AppTheme"></activity>
+        <activity android:name=".ModifiedSingleActivity"></activity>
     </application>
 
 </manifest>

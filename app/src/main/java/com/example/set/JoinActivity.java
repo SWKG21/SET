@@ -1,6 +1,5 @@
 package com.example.set;
 
-import android.content.Intent;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.os.Handler;
@@ -40,7 +39,7 @@ public class JoinActivity extends AppCompatActivity {
     private LinkedList<Integer> CardHeap = new LinkedList<>();
     int[] forCard = new int[12];
     private int selectedCount = 0;
-    private LinkedList<CardPanel> imgs = new LinkedList<>();
+    private CardPanel[] imgs = new CardPanel[15];
     private LinkedList<CardPanel> imgsSelected = new LinkedList<>();
     private LinkedList<Integer> forImgsSelected = new LinkedList<>();
     private Lock myLock = new ReentrantLock();
@@ -48,39 +47,11 @@ public class JoinActivity extends AppCompatActivity {
     private int recLen = 0;
     private TextView textScore;
     private int score = 0;
-    CardPanel img0;
-    CardPanel img1;
-    CardPanel img2;
-    CardPanel img3;
-    CardPanel img4;
-    CardPanel img5;
-    CardPanel img6;
-    CardPanel img7;
-    CardPanel img8;
-    CardPanel img9;
-    CardPanel img10;
-    CardPanel img11;
-    CardPanel img12;
-    CardPanel img13;
-    CardPanel img14;
-    Canvas c0 = new Canvas();
-    Canvas c1 = new Canvas();
-    Canvas c2 = new Canvas();
-    Canvas c3 = new Canvas();
-    Canvas c4 = new Canvas();
-    Canvas c5 = new Canvas();
-    Canvas c6 = new Canvas();
-    Canvas c7 = new Canvas();
-    Canvas c8 = new Canvas();
-    Canvas c9 = new Canvas();
-    Canvas c10 = new Canvas();
-    Canvas c11 = new Canvas();
-    Canvas c12 = new Canvas();
-    Canvas c13 = new Canvas();
-    Canvas c14 = new Canvas();
+    Canvas[] cs = new Canvas[15];
     LinearLayout tips;
     LinkedList<Integer> result = new LinkedList<>();
     LinkedList<CardPanel> forTips = new LinkedList<>();
+    Handler handler = new Handler();
 
     private TextView clientIP;
     private EditText serverIP;
@@ -160,16 +131,16 @@ public class JoinActivity extends AppCompatActivity {
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
-                myLock.lock();
-                try{
+                //myLock.lock();
+                //try{
                     //用Handler把读取到的信息发到主线程
                     Message msg = myhandler.obtainMessage();
                     msg.what = 1;
                     msg.obj = str;
                     myhandler.sendMessage(msg);
-                } finally {
-                    myLock.unlock();
-                }
+                //} finally {
+                    //myLock.unlock();
+                //}
 
                 try {
                     sleep(400);
@@ -208,12 +179,9 @@ public class JoinActivity extends AppCompatActivity {
                         //show out the first 12 cards
                         show12Cards();
 
-                        //add 12 CardPanels to imgs
-                        addTOimgs();
-
                         //set the click function for the 12 cards
-                        for(CardPanel img : imgs)
-                            img.setOnClickListener(new JoinActivity.cardClick());
+                        for(int i=0;i<12;i++)
+                            imgs[i].setOnClickListener(new JoinActivity.cardClick());
 
                         //whether need to add 3 more cards
                         if(!Card.SETexist(forCard))
@@ -221,30 +189,9 @@ public class JoinActivity extends AppCompatActivity {
                         else{
                             forTips.clear();
                             result = Card.getSET(forCard);
-                            if(result.contains(0))
-                                forTips.add(img0);
-                            if(result.contains(1))
-                                forTips.add(img1);
-                            if(result.contains(2))
-                                forTips.add(img2);
-                            if(result.contains(3))
-                                forTips.add(img3);
-                            if(result.contains(4))
-                                forTips.add(img4);
-                            if(result.contains(5))
-                                forTips.add(img5);
-                            if(result.contains(6))
-                                forTips.add(img6);
-                            if(result.contains(7))
-                                forTips.add(img7);
-                            if(result.contains(8))
-                                forTips.add(img8);
-                            if(result.contains(9))
-                                forTips.add(img9);
-                            if(result.contains(10))
-                                forTips.add(img10);
-                            if(result.contains(11))
-                                forTips.add(img11);
+                            for(int i=0;i<12;i++)
+                                if(result.contains(i))
+                                    forTips.add(imgs[i]);
                         }
 
                         //add result panel
@@ -255,11 +202,29 @@ public class JoinActivity extends AppCompatActivity {
                         //add time
                         textTime = (TextView) findViewById(R.id.textTime);
                         textTime.setTextColor(Color.BLACK);
-                        handler.postDelayed(runnable, 1000);
 
                         //add score
                         textScore = (TextView) findViewById(R.id.textScore);
                         textScore.setTextColor(Color.BLACK);
+
+                        handler.postDelayed(new Runnable() {
+                            @Override
+                            public void run() {
+                                recLen++;
+                                //int hour = recLen/3600;
+                                int minuit = (recLen%3600)/60;
+                                int second = recLen%60;
+                                DecimalFormat df = new DecimalFormat("00");
+                                //String hourF = df.format(hour);
+                                String minuitF = df.format(minuit);
+                                String secondF = df.format(second);
+                                //textTime.setText(hourF+" : "+minuitF+" : "+secondF);
+                                textTime.setText(minuitF+" : "+secondF);
+                                String s = "Score : "+score;
+                                textScore.setText(s);
+                                handler.postDelayed(this, 1000);
+                            }
+                        }, 1000);
                     }
                     else if(str.length()>=11 && str.substring(0,11).equals("server true")){
                         //receive true result of server
@@ -312,27 +277,6 @@ public class JoinActivity extends AppCompatActivity {
 
         }
     }
-
-    //add time and score
-    Handler handler = new Handler();
-    Runnable runnable = new Runnable() {
-        @Override
-        public void run() {
-            recLen++;
-            //int hour = recLen/3600;
-            int minuit = (recLen%3600)/60;
-            int second = recLen%60;
-            DecimalFormat df = new DecimalFormat("00");
-            //String hourF = df.format(hour);
-            String minuitF = df.format(minuit);
-            String secondF = df.format(second);
-            //textTime.setText(hourF+" : "+minuitF+" : "+secondF);
-            textTime.setText(minuitF+" : "+secondF);
-            String s = "Score : "+score;
-            textScore.setText(s);
-            handler.postDelayed(this, 1000);
-        }
-    };
 
     public String getLocalIpAddress() {
         try {
@@ -409,45 +353,15 @@ public class JoinActivity extends AppCompatActivity {
     }
 
     public void ConvertForImgsSelected(){
-        for(int i : forImgsSelected){
-            if(i==0)
-                imgsSelected.add(img0);
-            if(i==1)
-                imgsSelected.add(img1);
-            if(i==2)
-                imgsSelected.add(img2);
-            if(i==3)
-                imgsSelected.add(img3);
-            if(i==4)
-                imgsSelected.add(img4);
-            if(i==5)
-                imgsSelected.add(img5);
-            if(i==6)
-                imgsSelected.add(img6);
-            if(i==7)
-                imgsSelected.add(img7);
-            if(i==8)
-                imgsSelected.add(img8);
-            if(i==9)
-                imgsSelected.add(img9);
-            if(i==10)
-                imgsSelected.add(img10);
-            if(i==11)
-                imgsSelected.add(img11);
-            if(i==12)
-                imgsSelected.add(img12);
-            if(i==13)
-                imgsSelected.add(img13);
-            if(i==14)
-                imgsSelected.add(img14);
-        }
+        for(int i : forImgsSelected)
+            imgsSelected.add(imgs[i]);
     }
 
     //the tips function
     class tipsClick implements View.OnClickListener{
         @Override
         public void onClick(View v){
-            if(img12==null && !forTips.isEmpty()){
+            if(imgs[12]==null && !forTips.isEmpty()){
                 CardPanel tmp = forTips.poll();
                 if(tmp.isSelected())
                     tmp = forTips.poll();
@@ -495,133 +409,52 @@ public class JoinActivity extends AppCompatActivity {
         for(int i=0;i<12;i++)
             forCard[i] = CardHeap.poll();
 
-        img0 = (CardPanel) findViewById(R.id.img0);
-        img0.setBackground(ResourcesCompat.getDrawable(getResources(), R.color.colorCard, null));
-        img0.card = new Card(forCard[0]);
-        c0 = new Canvas();
-        img0.card.draw(c0,img0.getWidth(),img0.getHeight());
+        imgs[0] = (CardPanel) findViewById(R.id.img0);
+        imgs[1] = (CardPanel) findViewById(R.id.img1);
+        imgs[2] = (CardPanel) findViewById(R.id.img2);
+        imgs[3] = (CardPanel) findViewById(R.id.img3);
+        imgs[4] = (CardPanel) findViewById(R.id.img4);
+        imgs[5] = (CardPanel) findViewById(R.id.img5);
+        imgs[6] = (CardPanel) findViewById(R.id.img6);
+        imgs[7] = (CardPanel) findViewById(R.id.img7);
+        imgs[8] = (CardPanel) findViewById(R.id.img8);
+        imgs[9] = (CardPanel) findViewById(R.id.img9);
+        imgs[10] = (CardPanel) findViewById(R.id.img10);
+        imgs[11] = (CardPanel) findViewById(R.id.img11);
 
-        img1 = (CardPanel) findViewById(R.id.img1);
-        img1.setBackground(ResourcesCompat.getDrawable(getResources(), R.color.colorCard, null));
-        img1.card = new Card(forCard[1]);
-        c1 = new Canvas();
-        img1.card.draw(c1,img1.getWidth(),img1.getHeight());
-
-        img2 = (CardPanel) findViewById(R.id.img2);
-        img2.setBackground(ResourcesCompat.getDrawable(getResources(), R.color.colorCard, null));
-        img2.card = new Card(forCard[2]);
-        c2 = new Canvas();
-        img2.card.draw(c2,img2.getWidth(),img2.getHeight());
-
-        img3 = (CardPanel) findViewById(R.id.img3);
-        img3.setBackground(ResourcesCompat.getDrawable(getResources(), R.color.colorCard, null));
-        img3.card = new Card(forCard[3]);
-        c3 = new Canvas();
-        img3.card.draw(c3,img3.getWidth(),img3.getHeight());
-
-        img4 = (CardPanel) findViewById(R.id.img4);
-        img4.setBackground(ResourcesCompat.getDrawable(getResources(), R.color.colorCard, null));
-        img4.card = new Card(forCard[4]);
-        c4= new Canvas();
-        img4.card.draw(c4,img4.getWidth(),img4.getHeight());
-
-        img5 = (CardPanel) findViewById(R.id.img5);
-        img5.setBackground(ResourcesCompat.getDrawable(getResources(), R.color.colorCard, null));
-        img5.card = new Card(forCard[5]);
-        c5 = new Canvas();
-        img5.card.draw(c5,img5.getWidth(),img5.getHeight());
-
-        img6 = (CardPanel) findViewById(R.id.img6);
-        img6.setBackground(ResourcesCompat.getDrawable(getResources(), R.color.colorCard, null));
-        img6.card = new Card(forCard[6]);
-        c6= new Canvas();
-        img6.card.draw(c6,img6.getWidth(),img6.getHeight());
-
-        img7 = (CardPanel) findViewById(R.id.img7);
-        img7.setBackground(ResourcesCompat.getDrawable(getResources(), R.color.colorCard, null));
-        img7.card = new Card(forCard[7]);
-        c7 = new Canvas();
-        img7.card.draw(c7,img7.getWidth(),img7.getHeight());
-
-        img8 = (CardPanel) findViewById(R.id.img8);
-        img8.setBackground(ResourcesCompat.getDrawable(getResources(), R.color.colorCard, null));
-        img8.card = new Card(forCard[8]);
-        c8 = new Canvas();
-        img8.card.draw(c8,img8.getWidth(),img8.getHeight());
-
-        img9 = (CardPanel) findViewById(R.id.img9);
-        img9.setBackground(ResourcesCompat.getDrawable(getResources(), R.color.colorCard, null));
-        img9.card = new Card(forCard[9]);
-        c9 = new Canvas();
-        img9.card.draw(c9,img9.getWidth(),img9.getHeight());
-
-        img10 = (CardPanel) findViewById(R.id.img10);
-        img10.setBackground(ResourcesCompat.getDrawable(getResources(), R.color.colorCard, null));
-        img10.card = new Card(forCard[10]);
-        c10 = new Canvas();
-        img10.card.draw(c10,img10.getWidth(),img10.getHeight());
-
-        img11 = (CardPanel) findViewById(R.id.img11);
-        img11.setBackground(ResourcesCompat.getDrawable(getResources(), R.color.colorCard, null));
-        img11.card = new Card(forCard[11]);
-        c11 = new Canvas();
-        img11.card.draw(c11,img11.getWidth(),img11.getHeight());
-    }
-
-    //add 12 CardPanels to imgs
-    private void addTOimgs(){
-        imgs.add(img0);
-        imgs.add(img1);
-        imgs.add(img2);
-        imgs.add(img3);
-        imgs.add(img4);
-        imgs.add(img5);
-        imgs.add(img6);
-        imgs.add(img7);
-        imgs.add(img8);
-        imgs.add(img9);
-        imgs.add(img10);
-        imgs.add(img11);
+        for(int i=0;i<12;i++){
+            imgs[i].setBackground(ResourcesCompat.getDrawable(getResources(), R.color.colorCard, null));
+            imgs[i].card = new Card(forCard[i]);
+            cs[i] = new Canvas();
+            imgs[i].card.draw(cs[i],imgs[i].getWidth(),imgs[i].getHeight());
+        }
     }
 
     private void ThreeMore(){
-        img12 = (CardPanel) findViewById(R.id.img12);
-        img12.setBackground(ResourcesCompat.getDrawable(getResources(), R.color.colorCard, null));
-        img12.card = new Card(CardHeap.poll());
-        c12 = new Canvas();
-        img12.card.draw(c12,img12.getWidth(),img12.getHeight());
+        imgs[12] = (CardPanel) findViewById(R.id.img12);
+        imgs[13] = (CardPanel) findViewById(R.id.img13);
+        imgs[14] = (CardPanel) findViewById(R.id.img14);
 
-        img13 = (CardPanel) findViewById(R.id.img13);
-        img13.setBackground(ResourcesCompat.getDrawable(getResources(), R.color.colorCard, null));
-        img13.card = new Card(CardHeap.poll());
-        c13 = new Canvas();
-        img13.card.draw(c13,img13.getWidth(),img13.getHeight());
-
-        img14 = (CardPanel) findViewById(R.id.img14);
-        img14.setBackground(ResourcesCompat.getDrawable(getResources(), R.color.colorCard, null));
-        img14.card = new Card(CardHeap.poll());
-        c14 = new Canvas();
-        img14.card.draw(c14,img14.getWidth(),img14.getHeight());
-
-        img12.setOnClickListener(new JoinActivity.cardClick());
-        img13.setOnClickListener(new JoinActivity.cardClick());
-        img14.setOnClickListener(new JoinActivity.cardClick());
+        for(int i=12;i<15;i++){
+            imgs[i].setBackground(ResourcesCompat.getDrawable(getResources(), R.color.colorCard, null));
+            imgs[i].card = new Card(CardHeap.poll());
+            cs[i] = new Canvas();
+            imgs[i].card.draw(cs[i],imgs[i].getWidth(),imgs[i].getHeight());
+            imgs[i].setOnClickListener(new JoinActivity.cardClick());
+        }
     }
 
     //capture 3 selected cards
     private void addSelected(){
-        for(CardPanel img : imgs){
-            if(img.isSelected()) {
-                imgsSelected.add(img);
+        for(int i=0;i<12;i++){
+            if(imgs[i].isSelected()) {
+                imgsSelected.add(imgs[i]);
             }
         }
-        if(img12!=null){
-            if(img12.isSelected())
-                imgsSelected.add(img12);
-            if(img13.isSelected())
-                imgsSelected.add(img13);
-            if(img14.isSelected())
-                imgsSelected.add(img14);
+        if(imgs[12]!=null){
+            for(int i=12;i<15;i++)
+                if(imgs[i].isSelected())
+                    imgsSelected.add(imgs[i]);
         }
     }
 
@@ -761,135 +594,113 @@ public class JoinActivity extends AppCompatActivity {
 
     private void freezeAll(){
         tips.setClickable(false);
-        img0.setClickable(false);
-        img1.setClickable(false);
-        img2.setClickable(false);
-        img3.setClickable(false);
-        img4.setClickable(false);
-        img5.setClickable(false);
-        img6.setClickable(false);
-        img7.setClickable(false);
-        img8.setClickable(false);
-        img9.setClickable(false);
-        img10.setClickable(false);
-        img11.setClickable(false);
-        if(img12!=null){
-            img12.setClickable(false);
-            img13.setClickable(false);
-            img14.setClickable(false);
+        for(int i=0;i<12;i++)
+            imgs[i].setClickable(false);
+        if(imgs[12]!=null){
+            for(int i=12;i<15;i++)
+                imgs[i].setClickable(false);
         }
     }
 
     private void UNfreezeAll(){
         tips.setClickable(true);
-        img0.setClickable(true);
-        img1.setClickable(true);
-        img2.setClickable(true);
-        img3.setClickable(true);
-        img4.setClickable(true);
-        img5.setClickable(true);
-        img6.setClickable(true);
-        img7.setClickable(true);
-        img8.setClickable(true);
-        img9.setClickable(true);
-        img10.setClickable(true);
-        img11.setClickable(true);
-        if(img12!=null){
-            img12.setClickable(true);
-            img13.setClickable(true);
-            img14.setClickable(true);
+        for(int i=0;i<12;i++)
+            imgs[i].setClickable(true);
+        if(imgs[12]!=null){
+            for(int i=12;i<15;i++)
+                imgs[i].setClickable(true);
         }
     }
 
     //12(3 new) or 12(3 new)+3(new)=15 or 15-3(selected)=12 or 15-3(selected)+3(new)=15
     private void showThreeNewCards(){
         if(CardHeap.size()<3){
-            ;//for ternimate???????????????????????????????????????????????????
+            freezeAll();
         }
-        if(img12==null){
+        if(imgs[12]==null){
             if(imgsSelected.get(0).getId()==R.id.img0 || imgsSelected.get(1).getId()==R.id.img0 || imgsSelected.get(2).getId()==R.id.img0){
-                img0 = (CardPanel) findViewById(R.id.img0);
+                imgs[0] = (CardPanel) findViewById(R.id.img0);
                 forCard[0] = CardHeap.poll();
-                img0.card = new Card(forCard[0]);
-                c0 = new Canvas();
-                img0.card.draw(c0,img0.getWidth(),img0.getHeight());
+                imgs[0].card = new Card(forCard[0]);
+                cs[0] = new Canvas();
+                imgs[0].card.draw(cs[0],imgs[0].getWidth(),imgs[0].getHeight());
             }
             if(imgsSelected.get(0).getId()==R.id.img1 || imgsSelected.get(1).getId()==R.id.img1 || imgsSelected.get(2).getId()==R.id.img1){
-                img1 = (CardPanel) findViewById(R.id.img1);
+                imgs[1] = (CardPanel) findViewById(R.id.img1);
                 forCard[1] = CardHeap.poll();
-                img1.card = new Card(forCard[1]);
-                c1 = new Canvas();
-                img1.card.draw(c1,img1.getWidth(),img1.getHeight());
+                imgs[1].card = new Card(forCard[1]);
+                cs[1] = new Canvas();
+                imgs[1].card.draw(cs[1],imgs[1].getWidth(),imgs[1].getHeight());
             }
             if(imgsSelected.get(0).getId()==R.id.img2 || imgsSelected.get(1).getId()==R.id.img2 || imgsSelected.get(2).getId()==R.id.img2){
-                img2 = (CardPanel) findViewById(R.id.img2);
+                imgs[2] = (CardPanel) findViewById(R.id.img2);
                 forCard[2] = CardHeap.poll();
-                img2.card = new Card(forCard[2]);
-                c2 = new Canvas();
-                img2.card.draw(c2,img2.getWidth(),img2.getHeight());
+                imgs[2].card = new Card(forCard[2]);
+                cs[2] = new Canvas();
+                imgs[2].card.draw(cs[2],imgs[2].getWidth(),imgs[2].getHeight());
             }
             if(imgsSelected.get(0).getId()==R.id.img3 || imgsSelected.get(1).getId()==R.id.img3 || imgsSelected.get(2).getId()==R.id.img3){
-                img3 = (CardPanel) findViewById(R.id.img3);
+                imgs[3] = (CardPanel) findViewById(R.id.img3);
                 forCard[3] = CardHeap.poll();
-                img3.card = new Card(forCard[3]);
-                c3 = new Canvas();
-                img3.card.draw(c3,img3.getWidth(),img3.getHeight());
+                imgs[3].card = new Card(forCard[3]);
+                cs[3] = new Canvas();
+                imgs[3].card.draw(cs[3],imgs[3].getWidth(),imgs[3].getHeight());
             }
             if(imgsSelected.get(0).getId()==R.id.img4 || imgsSelected.get(1).getId()==R.id.img4 || imgsSelected.get(2).getId()==R.id.img4){
-                img4 = (CardPanel) findViewById(R.id.img4);
+                imgs[4] = (CardPanel) findViewById(R.id.img4);
                 forCard[4] = CardHeap.poll();
-                img4.card = new Card(forCard[4]);
-                c4= new Canvas();
-                img4.card.draw(c4,img4.getWidth(),img4.getHeight());
+                imgs[4].card = new Card(forCard[4]);
+                cs[4]= new Canvas();
+                imgs[4].card.draw(cs[4],imgs[4].getWidth(),imgs[4].getHeight());
             }
             if(imgsSelected.get(0).getId()==R.id.img5 || imgsSelected.get(1).getId()==R.id.img5 || imgsSelected.get(2).getId()==R.id.img5){
-                img5 = (CardPanel) findViewById(R.id.img5);
+                imgs[5] = (CardPanel) findViewById(R.id.img5);
                 forCard[5] = CardHeap.poll();
-                img5.card = new Card(forCard[5]);
-                c5 = new Canvas();
-                img5.card.draw(c5,img5.getWidth(),img5.getHeight());
+                imgs[5].card = new Card(forCard[5]);
+                cs[5] = new Canvas();
+                imgs[5].card.draw(cs[5],imgs[5].getWidth(),imgs[5].getHeight());
             }
             if(imgsSelected.get(0).getId()==R.id.img6 || imgsSelected.get(1).getId()==R.id.img6 || imgsSelected.get(2).getId()==R.id.img6){
-                img6 = (CardPanel) findViewById(R.id.img6);
+                imgs[6] = (CardPanel) findViewById(R.id.img6);
                 forCard[6] = CardHeap.poll();
-                img6.card = new Card(forCard[6]);
-                c6= new Canvas();
-                img6.card.draw(c6,img6.getWidth(),img6.getHeight());
+                imgs[6].card = new Card(forCard[6]);
+                cs[6]= new Canvas();
+                imgs[6].card.draw(cs[6],imgs[6].getWidth(),imgs[6].getHeight());
             }
             if(imgsSelected.get(0).getId()==R.id.img7 || imgsSelected.get(1).getId()==R.id.img7 || imgsSelected.get(2).getId()==R.id.img7){
-                img7 = (CardPanel) findViewById(R.id.img7);
+                imgs[7] = (CardPanel) findViewById(R.id.img7);
                 forCard[7] = CardHeap.poll();
-                img7.card = new Card(forCard[7]);
-                c7 = new Canvas();
-                img7.card.draw(c7,img7.getWidth(),img7.getHeight());
+                imgs[7].card = new Card(forCard[7]);
+                cs[7] = new Canvas();
+                imgs[7].card.draw(cs[7],imgs[7].getWidth(),imgs[7].getHeight());
             }
             if(imgsSelected.get(0).getId()==R.id.img8 || imgsSelected.get(1).getId()==R.id.img8 || imgsSelected.get(2).getId()==R.id.img8){
-                img8 = (CardPanel) findViewById(R.id.img8);
+                imgs[8] = (CardPanel) findViewById(R.id.img8);
                 forCard[8] = CardHeap.poll();
-                img8.card = new Card(forCard[8]);
-                c8 = new Canvas();
-                img8.card.draw(c8,img8.getWidth(),img8.getHeight());
+                imgs[8].card = new Card(forCard[8]);
+                cs[8] = new Canvas();
+                imgs[8].card.draw(cs[8],imgs[8].getWidth(),imgs[8].getHeight());
             }
             if(imgsSelected.get(0).getId()==R.id.img9 || imgsSelected.get(1).getId()==R.id.img9 || imgsSelected.get(2).getId()==R.id.img9){
-                img9 = (CardPanel) findViewById(R.id.img9);
+                imgs[9] = (CardPanel) findViewById(R.id.img9);
                 forCard[9] = CardHeap.poll();
-                img9.card = new Card(forCard[9]);
-                c9 = new Canvas();
-                img9.card.draw(c9,img9.getWidth(),img9.getHeight());
+                imgs[9].card = new Card(forCard[9]);
+                cs[9] = new Canvas();
+                imgs[9].card.draw(cs[9],imgs[9].getWidth(),imgs[9].getHeight());
             }
             if(imgsSelected.get(0).getId()==R.id.img10 || imgsSelected.get(1).getId()==R.id.img10 || imgsSelected.get(2).getId()==R.id.img10){
-                img10 = (CardPanel) findViewById(R.id.img10);
+                imgs[10] = (CardPanel) findViewById(R.id.img10);
                 forCard[10] = CardHeap.poll();
-                img10.card = new Card(forCard[10]);
-                c10 = new Canvas();
-                img10.card.draw(c10,img10.getWidth(),img10.getHeight());
+                imgs[10].card = new Card(forCard[10]);
+                cs[10] = new Canvas();
+                imgs[10].card.draw(cs[10],imgs[10].getWidth(),imgs[10].getHeight());
             }
             if(imgsSelected.get(0).getId()==R.id.img11 || imgsSelected.get(1).getId()==R.id.img11 || imgsSelected.get(2).getId()==R.id.img11){
-                img11 = (CardPanel) findViewById(R.id.img11);
+                imgs[11] = (CardPanel) findViewById(R.id.img11);
                 forCard[11] = CardHeap.poll();
-                img11.card = new Card(forCard[11]);
-                c11 = new Canvas();
-                img11.card.draw(c11,img11.getWidth(),img11.getHeight());
+                imgs[11].card = new Card(forCard[11]);
+                cs[11] = new Canvas();
+                imgs[11].card.draw(cs[11],imgs[11].getWidth(),imgs[11].getHeight());
             }
         }
         else{ //for the 3 more cards
@@ -927,352 +738,30 @@ public class JoinActivity extends AppCompatActivity {
                 if(c.getId()==R.id.img14)
                     tmp2.add(14);
             }
-            if(!tmp1.isEmpty() && tmp1.contains(0)){
-                if(!tmp2.contains(12)){
-                    img0 = (CardPanel) findViewById(R.id.img0);
-                    forCard[0] = img12.card.getValue();
-                    img0.card = new Card(forCard[0]);
-                    c0 = new Canvas();
-                    img0.card.draw(c0,img0.getWidth(),img0.getHeight());
-                    tmp2.add(12);
+            for(int i=0;i<12;i++){
+                if(!tmp1.isEmpty() && tmp1.contains(i)){
+                    for(int j=12;j<15;j++){
+                        if(!tmp2.contains(j)){
+                            forCard[i] = imgs[j].card.getValue();
+                            imgs[i].card = new Card(forCard[i]);
+                            cs[i] =new Canvas();
+                            imgs[i].card.draw(cs[i],imgs[i].getWidth(),imgs[i].getHeight());
+                            tmp2.add(j);
+                        }
+                    }
+                    tmp1.remove((Integer)i);
                 }
-                else if(!tmp2.contains(13)){
-                    img0 = (CardPanel) findViewById(R.id.img0);
-                    forCard[0] = img13.card.getValue();
-                    img0.card = new Card(forCard[0]);
-                    c0 = new Canvas();
-                    img0.card.draw(c0,img0.getWidth(),img0.getHeight());
-                    tmp2.add(13);
-                }
-                else{
-                    img0 = (CardPanel) findViewById(R.id.img0);
-                    forCard[0] = img14.card.getValue();
-                    img0.card = new Card(forCard[0]);
-                    c0 = new Canvas();
-                    img0.card.draw(c0,img0.getWidth(),img0.getHeight());
-                    tmp2.add(14);
-                }
-                tmp1.remove((Integer)0);
-            }
-            if(!tmp1.isEmpty() && tmp1.contains(1)){
-                if(!tmp2.contains(12)){
-                    img1 = (CardPanel) findViewById(R.id.img1);
-                    forCard[1] = img12.card.getValue();
-                    img1.card = new Card(forCard[1]);
-                    c1 = new Canvas();
-                    img1.card.draw(c1,img0.getWidth(),img1.getHeight());
-                    tmp2.add(12);
-                }
-                else if(!tmp2.contains(13)){
-                    img1 = (CardPanel) findViewById(R.id.img1);
-                    forCard[1] = img13.card.getValue();
-                    img1.card = new Card(forCard[1]);
-                    c1 = new Canvas();
-                    img1.card.draw(c1,img0.getWidth(),img1.getHeight());
-                    tmp2.add(13);
-                }
-                else{
-                    img1 = (CardPanel) findViewById(R.id.img1);
-                    forCard[1] = img14.card.getValue();
-                    img1.card = new Card(forCard[1]);
-                    c1 = new Canvas();
-                    img1.card.draw(c1,img0.getWidth(),img1.getHeight());
-                    tmp2.add(14);
-                }
-                tmp1.remove((Integer)1);
-            }
-            if(!tmp1.isEmpty() && tmp1.contains(2)){
-                if(!tmp2.contains(12)){
-                    img2 = (CardPanel) findViewById(R.id.img2);
-                    forCard[2] = img12.card.getValue();
-                    img2.card = new Card(forCard[2]);
-                    c2 = new Canvas();
-                    img2.card.draw(c2,img2.getWidth(),img2.getHeight());
-                    tmp2.add(12);
-                }
-                else if(!tmp2.contains(13)){
-                    img2 = (CardPanel) findViewById(R.id.img2);
-                    forCard[2] = img13.card.getValue();
-                    img2.card = new Card(forCard[2]);
-                    c2 = new Canvas();
-                    img2.card.draw(c2,img2.getWidth(),img2.getHeight());
-                    tmp2.add(13);
-                }
-                else{
-                    img2 = (CardPanel) findViewById(R.id.img2);
-                    forCard[2] = img14.card.getValue();
-                    img2.card = new Card(forCard[2]);
-                    c2 = new Canvas();
-                    img2.card.draw(c2,img2.getWidth(),img2.getHeight());
-                    tmp2.add(14);
-                }
-                tmp1.remove((Integer)2);
-            }
-            if(!tmp1.isEmpty() && tmp1.contains(3)){
-                if(!tmp2.contains(12)){
-                    img3 = (CardPanel) findViewById(R.id.img3);
-                    forCard[3] = img12.card.getValue();
-                    img3.card = new Card(forCard[3]);
-                    c3 = new Canvas();
-                    img3.card.draw(c3,img3.getWidth(),img3.getHeight());
-                    tmp2.add(12);
-                }
-                else if(!tmp2.contains(13)){
-                    img3 = (CardPanel) findViewById(R.id.img3);
-                    forCard[3] = img13.card.getValue();
-                    img3.card = new Card(forCard[3]);
-                    c3 = new Canvas();
-                    img3.card.draw(c3,img3.getWidth(),img3.getHeight());
-                    tmp2.add(13);
-                }
-                else{
-                    img3 = (CardPanel) findViewById(R.id.img3);
-                    forCard[3] = img14.card.getValue();
-                    img3.card = new Card(forCard[3]);
-                    c3 = new Canvas();
-                    img3.card.draw(c3,img3.getWidth(),img3.getHeight());
-                    tmp2.add(14);
-                }
-                tmp1.remove((Integer)3);
-            }
-            if(!tmp1.isEmpty() && tmp1.contains(4)){
-                if(!tmp2.contains(12)){
-                    img4 = (CardPanel) findViewById(R.id.img4);
-                    forCard[4] = img12.card.getValue();
-                    img4.card = new Card(forCard[4]);
-                    c4= new Canvas();
-                    img4.card.draw(c4,img4.getWidth(),img4.getHeight());
-                    tmp2.add(12);
-                }
-                else if(!tmp2.contains(13)){
-                    img4 = (CardPanel) findViewById(R.id.img4);
-                    forCard[4] = img13.card.getValue();
-                    img4.card = new Card(forCard[4]);
-                    c4= new Canvas();
-                    img4.card.draw(c4,img4.getWidth(),img4.getHeight());
-                    tmp2.add(13);
-                }
-                else{
-                    img4 = (CardPanel) findViewById(R.id.img4);
-                    forCard[4] = img14.card.getValue();
-                    img4.card = new Card(forCard[4]);
-                    c4= new Canvas();
-                    img4.card.draw(c4,img4.getWidth(),img4.getHeight());
-                    tmp2.add(14);
-                }
-                tmp1.remove((Integer)4);
-            }
-            if(!tmp1.isEmpty() && tmp1.contains(5)){
-                if(!tmp2.contains(12)){
-                    img5 = (CardPanel) findViewById(R.id.img5);
-                    forCard[5] = img12.card.getValue();
-                    img5.card = new Card(forCard[5]);
-                    c5 = new Canvas();
-                    img5.card.draw(c5,img5.getWidth(),img5.getHeight());
-                    tmp2.add(12);
-                }
-                else if(!tmp2.contains(13)){
-                    img5 = (CardPanel) findViewById(R.id.img5);
-                    forCard[5] = img13.card.getValue();
-                    img5.card = new Card(forCard[5]);
-                    c5 = new Canvas();
-                    img5.card.draw(c5,img5.getWidth(),img5.getHeight());
-                    tmp2.add(13);
-                }
-                else{
-                    img5 = (CardPanel) findViewById(R.id.img5);
-                    forCard[5] = img14.card.getValue();
-                    img5.card = new Card(forCard[5]);
-                    c5 = new Canvas();
-                    img5.card.draw(c5,img5.getWidth(),img5.getHeight());
-                    tmp2.add(14);
-                }
-                tmp1.remove((Integer)5);
-            }
-            if(!tmp1.isEmpty() && tmp1.contains(6)){
-                if(!tmp2.contains(12)){
-                    img6 = (CardPanel) findViewById(R.id.img6);
-                    forCard[6] = img12.card.getValue();
-                    img6.card = new Card(forCard[6]);
-                    c6= new Canvas();
-                    img6.card.draw(c6,img6.getWidth(),img6.getHeight());
-                    tmp2.add(12);
-                }
-                else if(!tmp2.contains(13)){
-                    img6 = (CardPanel) findViewById(R.id.img6);
-                    forCard[6] = img13.card.getValue();
-                    img6.card = new Card(forCard[6]);
-                    c6= new Canvas();
-                    img6.card.draw(c6,img6.getWidth(),img6.getHeight());
-                    tmp2.add(13);
-                }
-                else{
-                    img6 = (CardPanel) findViewById(R.id.img6);
-                    forCard[6] = img14.card.getValue();
-                    img6.card = new Card(forCard[6]);
-                    c6= new Canvas();
-                    img6.card.draw(c6,img6.getWidth(),img6.getHeight());
-                    tmp2.add(14);
-                }
-                tmp1.remove((Integer)6);
-            }
-            if(!tmp1.isEmpty() && tmp1.contains(7)){
-                if(!tmp2.contains(12)){
-                    img7 = (CardPanel) findViewById(R.id.img7);
-                    forCard[7] = img12.card.getValue();
-                    img7.card = new Card(forCard[7]);
-                    c7 = new Canvas();
-                    img7.card.draw(c7,img7.getWidth(),img7.getHeight());
-                    tmp2.add(12);
-                }
-                else if(!tmp2.contains(13)){
-                    img7 = (CardPanel) findViewById(R.id.img7);
-                    forCard[7] = img13.card.getValue();
-                    img7.card = new Card(forCard[7]);
-                    c7 = new Canvas();
-                    img7.card.draw(c7,img7.getWidth(),img7.getHeight());
-                    tmp2.add(13);
-                }
-                else{
-                    img7 = (CardPanel) findViewById(R.id.img7);
-                    forCard[7] = img14.card.getValue();
-                    img7.card = new Card(forCard[7]);
-                    c7 = new Canvas();
-                    img7.card.draw(c7,img7.getWidth(),img7.getHeight());
-                    tmp2.add(14);
-                }
-                tmp1.remove((Integer)7);
-            }
-            if(!tmp1.isEmpty() && tmp1.contains(8)){
-                if(!tmp2.contains(12)){
-                    img8 = (CardPanel) findViewById(R.id.img8);
-                    forCard[8] = img12.card.getValue();
-                    img8.card = new Card(forCard[8]);
-                    c8 = new Canvas();
-                    img8.card.draw(c8,img8.getWidth(),img8.getHeight());
-                    tmp2.add(12);
-                }
-                else if(!tmp2.contains(13)){
-                    img8 = (CardPanel) findViewById(R.id.img8);
-                    forCard[8] = img13.card.getValue();
-                    img8.card = new Card(forCard[8]);
-                    c8 = new Canvas();
-                    img8.card.draw(c8,img8.getWidth(),img8.getHeight());
-                    tmp2.add(13);
-                }
-                else{
-                    img8 = (CardPanel) findViewById(R.id.img8);
-                    forCard[8] = img14.card.getValue();
-                    img8.card = new Card(forCard[8]);
-                    c8 = new Canvas();
-                    img8.card.draw(c8,img8.getWidth(),img8.getHeight());
-                    tmp2.add(14);
-                }
-                tmp1.remove((Integer)8);
-            }
-            if(!tmp1.isEmpty() && tmp1.contains(9)){
-                if(!tmp2.contains(12)){
-                    img9 = (CardPanel) findViewById(R.id.img9);
-                    forCard[9] = img12.card.getValue();
-                    img9.card = new Card(forCard[9]);
-                    c9 = new Canvas();
-                    img9.card.draw(c9,img9.getWidth(),img9.getHeight());
-                    tmp2.add(12);
-                }
-                else if(!tmp2.contains(13)){
-                    img9 = (CardPanel) findViewById(R.id.img9);
-                    forCard[9] = img13.card.getValue();
-                    img9.card = new Card(forCard[9]);
-                    c9 = new Canvas();
-                    img9.card.draw(c9,img9.getWidth(),img9.getHeight());
-                    tmp2.add(13);
-                }
-                else{
-                    img9 = (CardPanel) findViewById(R.id.img9);
-                    forCard[9] = img14.card.getValue();
-                    img9.card = new Card(forCard[9]);
-                    c9 = new Canvas();
-                    img9.card.draw(c9,img9.getWidth(),img9.getHeight());
-                    tmp2.add(14);
-                }
-                tmp1.remove((Integer)9);
-            }
-            if(!tmp1.isEmpty() && tmp1.contains(10)){
-                if(!tmp2.contains(12)){
-                    img10 = (CardPanel) findViewById(R.id.img10);
-                    forCard[10] = img12.card.getValue();
-                    img10.card = new Card(forCard[10]);
-                    c10 = new Canvas();
-                    img10.card.draw(c10,img10.getWidth(),img10.getHeight());
-                    tmp2.add(12);
-                }
-                else if(!tmp2.contains(13)){
-                    img10 = (CardPanel) findViewById(R.id.img10);
-                    forCard[10] = img13.card.getValue();
-                    img10.card = new Card(forCard[10]);
-                    c10 = new Canvas();
-                    img10.card.draw(c10,img10.getWidth(),img10.getHeight());
-                    tmp2.add(13);
-                }
-                else{
-                    img10 = (CardPanel) findViewById(R.id.img10);
-                    forCard[10] = img14.card.getValue();
-                    img10.card = new Card(forCard[10]);
-                    c10 = new Canvas();
-                    img10.card.draw(c10,img10.getWidth(),img10.getHeight());
-                    tmp2.add(14);
-                }
-                tmp1.remove((Integer)10);
-            }
-            if(!tmp1.isEmpty() && tmp1.contains(11)){
-                if(!tmp2.contains(12)){
-                    img11 = (CardPanel) findViewById(R.id.img11);
-                    forCard[11] = img12.card.getValue();
-                    img11.card = new Card(forCard[11]);
-                    c11 = new Canvas();
-                    img11.card.draw(c11,img11.getWidth(),img11.getHeight());
-                    tmp2.add(12);
-                }
-                else if(!tmp2.contains(13)){
-                    img11 = (CardPanel) findViewById(R.id.img11);
-                    forCard[11] = img13.card.getValue();
-                    img11.card = new Card(forCard[11]);
-                    c11 = new Canvas();
-                    img11.card.draw(c11,img11.getWidth(),img11.getHeight());
-                    tmp2.add(13);
-                }
-                else{
-                    img11 = (CardPanel) findViewById(R.id.img11);
-                    forCard[11] = img14.card.getValue();
-                    img11.card = new Card(forCard[11]);
-                    c11 = new Canvas();
-                    img11.card.draw(c11,img11.getWidth(),img11.getHeight());
-                    tmp2.add(14);
-                }
-                tmp1.remove((Integer)11);
             }
 
             //erase the 3 more cards
-            c12 = new Canvas();
-            img12.card = new Card(-1);
-            img12.card.draw(c12, img12.getWidth(), img12.getHeight());
-            img12.setBackgroundColor(Color.TRANSPARENT);
-            img12.setClickable(false);
-            img12=null;
-
-            c13 = new Canvas();
-            img13.card = new Card(-1);
-            img13.card.draw(c13, img13.getWidth(), img13.getHeight());
-            img13.setBackgroundColor(Color.TRANSPARENT);
-            img13.setClickable(false);
-            img13=null;
-
-            c14 = new Canvas();
-            img14.card = new Card(-1);
-            img14.card.draw(c14, img14.getWidth(), img14.getHeight());
-            img14.setBackgroundColor(Color.TRANSPARENT);
-            img14.setClickable(false);
-            img14=null;
+            for(int i=12;i<15;i++){
+                cs[i] = new Canvas();
+                imgs[i].card = new Card(-1);
+                imgs[i].card.draw(cs[i], imgs[i].getWidth(), imgs[i].getHeight());
+                imgs[i].setBackgroundColor(Color.TRANSPARENT);
+                imgs[i].setClickable(false);
+                imgs[i]=null;
+            }
         }
 
         //add 12 to 15
@@ -1281,30 +770,9 @@ public class JoinActivity extends AppCompatActivity {
         else{
             forTips.clear();
             result = Card.getSET(forCard);
-            if(result.contains(0))
-                forTips.add(img0);
-            if(result.contains(1))
-                forTips.add(img1);
-            if(result.contains(2))
-                forTips.add(img2);
-            if(result.contains(3))
-                forTips.add(img3);
-            if(result.contains(4))
-                forTips.add(img4);
-            if(result.contains(5))
-                forTips.add(img5);
-            if(result.contains(6))
-                forTips.add(img6);
-            if(result.contains(7))
-                forTips.add(img7);
-            if(result.contains(8))
-                forTips.add(img8);
-            if(result.contains(9))
-                forTips.add(img9);
-            if(result.contains(10))
-                forTips.add(img10);
-            if(result.contains(11))
-                forTips.add(img11);
+            for(int i=0;i<12;i++)
+                if(result.contains(i))
+                    forTips.add(imgs[i]);
         }
     }
 }

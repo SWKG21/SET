@@ -59,6 +59,7 @@ public class SingleActivity extends AppCompatActivity {
     LinearLayout tips;
     LinkedList<Integer> result = new LinkedList<>();
     LinkedList<CardPanel> forTips = new LinkedList<>();
+    Handler handler = new Handler();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -125,13 +126,29 @@ public class SingleActivity extends AppCompatActivity {
         //add time
         textTime = (TextView) findViewById(R.id.textTime);
         textTime.setTextColor(Color.BLACK);
-        handler.postDelayed(runnable, 1000);
 
         //add score
         textScore = (TextView) findViewById(R.id.textScore);
         textScore.setTextColor(Color.BLACK);
 
-
+        handler.postDelayed(new Runnable(){
+            @Override
+            public void run() {
+                recLen++;
+                //int hour = recLen/3600;
+                int minuit = (recLen%3600)/60;
+                int second = recLen%60;
+                DecimalFormat df = new DecimalFormat("00");
+                //String hourF = df.format(hour);
+                String minuitF = df.format(minuit);
+                String secondF = df.format(second);
+                //textTime.setText(hourF+" : "+minuitF+" : "+secondF);
+                textTime.setText(minuitF+" : "+secondF);
+                String s = "Score : "+score;
+                textScore.setText(s);
+                handler.postDelayed(this, 1000);
+            }
+        }, 1000);
     }
 
     //the tips function
@@ -179,27 +196,6 @@ public class SingleActivity extends AppCompatActivity {
             }
         }
     }
-
-    //add time and score
-    Handler handler = new Handler();
-    Runnable runnable = new Runnable() {
-        @Override
-        public void run() {
-            recLen++;
-            //int hour = recLen/3600;
-            int minuit = (recLen%3600)/60;
-            int second = recLen%60;
-            DecimalFormat df = new DecimalFormat("00");
-            //String hourF = df.format(hour);
-            String minuitF = df.format(minuit);
-            String secondF = df.format(second);
-            //textTime.setText(hourF+" : "+minuitF+" : "+secondF);
-            textTime.setText(minuitF+" : "+secondF);
-            String s = "Score : "+score;
-            textScore.setText(s);
-            handler.postDelayed(this, 1000);
-        }
-    };
 
     //generate 81 cards with the random order
     private void generateCardHeap(){
@@ -584,7 +580,7 @@ public class SingleActivity extends AppCompatActivity {
                     forCard[1] = img12.card.getValue();
                     img1.card = new Card(forCard[1]);
                     c1 = new Canvas();
-                    img1.card.draw(c1,img0.getWidth(),img1.getHeight());
+                    img1.card.draw(c1,img1.getWidth(),img1.getHeight());
                     tmp2.add(12);
                 }
                 else if(!tmp2.contains(13)){
@@ -592,7 +588,7 @@ public class SingleActivity extends AppCompatActivity {
                     forCard[1] = img13.card.getValue();
                     img1.card = new Card(forCard[1]);
                     c1 = new Canvas();
-                    img1.card.draw(c1,img0.getWidth(),img1.getHeight());
+                    img1.card.draw(c1,img1.getWidth(),img1.getHeight());
                     tmp2.add(13);
                 }
                 else{
@@ -600,7 +596,7 @@ public class SingleActivity extends AppCompatActivity {
                     forCard[1] = img14.card.getValue();
                     img1.card = new Card(forCard[1]);
                     c1 = new Canvas();
-                    img1.card.draw(c1,img0.getWidth(),img1.getHeight());
+                    img1.card.draw(c1,img1.getWidth(),img1.getHeight());
                     tmp2.add(14);
                 }
                 tmp1.remove((Integer)1);
