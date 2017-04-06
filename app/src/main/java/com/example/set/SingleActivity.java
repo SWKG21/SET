@@ -66,14 +66,6 @@ public class SingleActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_single);
 
-        /*//this way doesn't work
-        ImageView img0 = (ImageView) findViewById(R.id.img0);
-        int valueOfCard0 = Cards.valueOf(1,1,1,1);
-        CardDrawable cd0 = new CardDrawable(valueOfCard0);
-        img0.setImageDrawable(cd0);
-        Canvas c = new Canvas();
-        cd0.draw(c);*/
-
         //generate 81 cards with the random order
         generateCardHeap();
 

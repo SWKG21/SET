@@ -44,6 +44,10 @@ public class CreateActivity extends AppCompatActivity {
     int[] forCard = new int[12];
     private int selectedCount = 0;
     private CardPanel[] imgs = new CardPanel[15];
+    //only for server
+    LinkedList<CardPanel> ServerImgsSelected = new LinkedList<>();
+    LinkedList<Integer> ServerForImgsSelected = new LinkedList<>();
+    //for both server and client
     LinkedList<CardPanel> imgsSelected = new LinkedList<>();
     LinkedList<Integer> forImgsSelected = new LinkedList<>();
     private Lock myLock = new ReentrantLock();
@@ -156,29 +160,6 @@ public class CreateActivity extends AppCompatActivity {
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
-                //myLock.lock();
-                //try{
-                    if(!resultList.isEmpty()){
-                        Pair<String, String> res = resultList.poll();
-                        String[] strs  = res.second.split(", ");
-                        for(int i=0;i<strs.length;i++)
-                            forImgsSelected.add(Integer.valueOf(strs[i]));
-                        //add to imgsSelected
-                        ConvertForImgsSelected();
-                        if(checkSET()) {
-                            ServerSend("client true "+res.first+" "+res.second);
-                            SETeffect();
-                        }
-                        else {
-                            ServerSend("client false " + res.first + " " + res.second);
-                            imgsSelected.clear();
-                            forImgsSelected.clear();
-                        }
-                        resultList.clear();
-                    }
-                //} finally {
-                    //myLock.unlock();
-                //}
                 BufferedReader br = null;
                 try {
                     br = new BufferedReader(new InputStreamReader(is, "UTF-8"));
@@ -197,16 +178,16 @@ public class CreateActivity extends AppCompatActivity {
                     e.printStackTrace();
                     break;
                 }
-                //myLock.lock();
-                //try{
+                myLock.lock();
+                try{
                     //用Handler把读取到的信息发到主线程
                     Message msg = mHandler.obtainMessage();
                     msg.what = 1;
                     msg.obj = read;
                     mHandler.sendMessage(msg);
-                //} finally {
-                    //myLock.unlock();
-                //}
+                } finally {
+                    myLock.unlock();
+                }
             }
         }
     }
@@ -217,10 +198,8 @@ public class CreateActivity extends AppCompatActivity {
             switch (msg.what){
                 case 1:
                     String str = (String) msg.obj;
-                    if(str.substring(0,6).equals("client")){
-                        //register IP and choice of client
-                        resultList.add(new Pair(str.substring(7,20),str.substring(22, str.length()-1)));
-                    }
+                    //register IP and choice of client
+                    resultList.add(new Pair(str.substring(0,13),str.substring(15, str.length()-1)));
                     break;
                 case 0:
                     String s = clientIP.getText().toString();
@@ -298,6 +277,33 @@ public class CreateActivity extends AppCompatActivity {
                 textTime.setText(minuitF+" : "+secondF);
                 String s = "Score : "+score;
                 textScore.setText(s);
+
+                while(!resultList.isEmpty()){
+                    Pair<String, String> res = resultList.poll();
+                    String[] strs  = res.second.split(", ");
+                    for(int i=0;i<strs.length;i++)
+                        forImgsSelected.add(Integer.valueOf(strs[i]));
+                    //add to imgsSelected
+                    ConvertForImgsSelected();
+                    if(checkSET()) {
+                        ServerSend("true "+res.first+" "+res.second);
+                        if(res.first.equals(getLocalIpAddress()))
+                            selfSETeffect();
+                        else
+                            SETeffect();
+                        resultList.clear();
+                    }
+                    else {
+                        ServerSend("false " + res.first + " " + res.second);
+                        if(res.first.equals(getLocalIpAddress()))
+                            NOTSETeffect();
+                        else{
+                            imgsSelected.clear();
+                            forImgsSelected.clear();
+                        }
+                    }
+                }
+
                 handler.postDelayed(this, 1000);
             }
         }, 1000);
@@ -345,38 +351,38 @@ public class CreateActivity extends AppCompatActivity {
         }
     }
 
-    public void ConvertImgsSelected(){
-        for(CardPanel c : imgsSelected){
+    public void ConvertServerImgsSelected(){
+        for(CardPanel c : ServerImgsSelected){
             if(c.getId()==R.id.img0)
-                forImgsSelected.add(0);
+                ServerForImgsSelected.add(0);
             if(c.getId()==R.id.img1)
-                forImgsSelected.add(1);
+                ServerForImgsSelected.add(1);
             if(c.getId()==R.id.img2)
-                forImgsSelected.add(2);
+                ServerForImgsSelected.add(2);
             if(c.getId()==R.id.img3)
-                forImgsSelected.add(3);
+                ServerForImgsSelected.add(3);
             if(c.getId()==R.id.img4)
-                forImgsSelected.add(4);
+                ServerForImgsSelected.add(4);
             if(c.getId()==R.id.img5)
-                forImgsSelected.add(5);
+                ServerForImgsSelected.add(5);
             if(c.getId()==R.id.img6)
-                forImgsSelected.add(6);
+                ServerForImgsSelected.add(6);
             if(c.getId()==R.id.img7)
-                forImgsSelected.add(7);
+                ServerForImgsSelected.add(7);
             if(c.getId()==R.id.img8)
-                forImgsSelected.add(8);
+                ServerForImgsSelected.add(8);
             if(c.getId()==R.id.img9)
-                forImgsSelected.add(9);
+                ServerForImgsSelected.add(9);
             if(c.getId()==R.id.img10)
-                forImgsSelected.add(10);
+                ServerForImgsSelected.add(10);
             if(c.getId()==R.id.img11)
-                forImgsSelected.add(11);
+                ServerForImgsSelected.add(11);
             if(c.getId()==R.id.img12)
-                forImgsSelected.add(12);
+                ServerForImgsSelected.add(12);
             if(c.getId()==R.id.img13)
-                forImgsSelected.add(13);
+                ServerForImgsSelected.add(13);
             if(c.getId()==R.id.img14)
-                forImgsSelected.add(14);
+                ServerForImgsSelected.add(14);
         }
     }
 
@@ -421,25 +427,16 @@ public class CreateActivity extends AppCompatActivity {
                     selectedCount++;
                     v.setClickable(true);
                     if(selectedCount==3){
-                        //myLock.lock();
-                        //try{
+                        myLock.lock();
+                        try{
                             addSelected();
-                            if(checkSET()){
-                                //send result of server to client
-                                ConvertImgsSelected();
-                                ServerSend("server true"+forImgsSelected.toString());
-                                //do effect
-                                selfSETeffect();
-                            }
-                            else{
-                                //send result of server to client
-                                ServerSend("server false");
-                                //do effect
-                                NOTSETeffect();
-                            }
-                        //}finally {
-                            //myLock.unlock();
-                        //}
+                            ConvertServerImgsSelected();
+                            //register IP and choice of server
+                            String s = ServerForImgsSelected.toString();
+                            resultList.add(new Pair(getLocalIpAddress(),s.substring(1,s.length()-1)));
+                        }finally {
+                            myLock.unlock();
+                        }
                     }
                 }
                 else
@@ -501,13 +498,13 @@ public class CreateActivity extends AppCompatActivity {
     private void addSelected(){
         for(int i=0;i<12;i++){
             if(imgs[i].isSelected()) {
-                imgsSelected.add(imgs[i]);
+                ServerImgsSelected.add(imgs[i]);
             }
         }
         if(imgs[12]!=null){
             for(int i=12;i<15;i++)
                 if(imgs[i].isSelected())
-                    imgsSelected.add(imgs[i]);
+                    ServerImgsSelected.add(imgs[i]);
         }
     }
 
@@ -568,6 +565,8 @@ public class CreateActivity extends AppCompatActivity {
                 //clear the list of selected card
                 imgsSelected.clear();
                 forImgsSelected.clear();
+                ServerImgsSelected.clear();
+                ServerForImgsSelected.clear();
 
                 //recover the tips function
                 tips.setOnClickListener(new CreateActivity.tipsClick());
@@ -604,13 +603,15 @@ public class CreateActivity extends AppCompatActivity {
                 //clear the list of selected card
                 imgsSelected.clear();
                 forImgsSelected.clear();
+                ServerImgsSelected.clear();
+                ServerForImgsSelected.clear();
 
                 //recover the tips function
                 tips.setOnClickListener(new CreateActivity.tipsClick());
             }
         }, 1500);
 
-        UNfreezeAll(); //??????here
+        UNfreezeAll();
     }
 
     private void NOTSETeffect(){
@@ -642,13 +643,15 @@ public class CreateActivity extends AppCompatActivity {
                 imgsSelected.get(2).setSelected(false);
                 imgsSelected.clear();
                 forImgsSelected.clear();
+                ServerImgsSelected.clear();
+                ServerForImgsSelected.clear();
 
                 //recover the tips function
-                tips.setOnClickListener(new CreateActivity.tipsClick());
+                //tips.setOnClickListener(new CreateActivity.tipsClick());
             }
         }, 1500);
 
-        freezeAll();  //???????here
+        freezeAll();
     }
 
     private void freezeAll(){
@@ -662,7 +665,7 @@ public class CreateActivity extends AppCompatActivity {
     }
 
     private void UNfreezeAll(){
-        tips.setClickable(true);
+        tips.setOnClickListener(new CreateActivity.tipsClick());
         for(int i=0;i<12;i++)
             imgs[i].setClickable(true);
         if(imgs[12]!=null){

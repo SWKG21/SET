@@ -42,7 +42,6 @@ public class JoinActivity extends AppCompatActivity {
     private CardPanel[] imgs = new CardPanel[15];
     private LinkedList<CardPanel> imgsSelected = new LinkedList<>();
     private LinkedList<Integer> forImgsSelected = new LinkedList<>();
-    private Lock myLock = new ReentrantLock();
     private TextView textTime;
     private int recLen = 0;
     private TextView textScore;
@@ -131,17 +130,11 @@ public class JoinActivity extends AppCompatActivity {
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
-                //myLock.lock();
-                //try{
-                    //用Handler把读取到的信息发到主线程
-                    Message msg = myhandler.obtainMessage();
-                    msg.what = 1;
-                    msg.obj = str;
-                    myhandler.sendMessage(msg);
-                //} finally {
-                    //myLock.unlock();
-                //}
-
+                //用Handler把读取到的信息发到主线程
+                Message msg = myhandler.obtainMessage();
+                msg.what = 1;
+                msg.obj = str;
+                myhandler.sendMessage(msg);
                 try {
                     sleep(400);
                 } catch (InterruptedException e) {
@@ -169,7 +162,7 @@ public class JoinActivity extends AppCompatActivity {
                         layout.removeView(serverIP);
                         layout.removeView(btnStart);
                     }
-                    else if(str.substring(0, 8).equals("CardHeap")){
+                    else if(str.substring(0,8).equals("CardHeap")){
                         //receive CardHeap
                         str = str.substring(9, str.length()-1);
                         String[] strs  = str.split(", ");
@@ -226,36 +219,24 @@ public class JoinActivity extends AppCompatActivity {
                             }
                         }, 1000);
                     }
-                    else if(str.length()>=11 && str.substring(0,11).equals("server true")){
-                        //receive true result of server
-                        str = str.substring(12, str.length()-1);
-                        String[] strs  = str.split(", ");
+                    else if(str.substring(0,4).equals("true")){
+                        String[] strs  = str.substring(19,str.length()).split(", ");
                         for(int i=0;i<strs.length;i++)
                             forImgsSelected.add(Integer.valueOf(strs[i]));
                         //add to imgsSelected
                         ConvertForImgsSelected();
-                        SETeffect();
-                    }
-                    else if(str.length()>=12 && str.substring(0,12).equals("server false"))
-                        ;
-                    else if(str.length()>=11 && str.substring(0,11).equals("client true")){
-                        String[] strs  = str.substring(26,str.length()).split(", ");
-                        for(int i=0;i<strs.length;i++)
-                            forImgsSelected.add(Integer.valueOf(strs[i]));
-                        //add to imgsSelected
-                        ConvertForImgsSelected();
-                        if(str.substring(12,25).equals(getLocalIpAddress()))
+                        if(str.substring(5,18).equals(getLocalIpAddress()))
                             selfSETeffect();
                         else
                             SETeffect();
                     }
-                    else if(str.length()>=12 && str.substring(0,12).equals("client false")){
-                        String[] strs  = str.substring(27,str.length()).split(", ");
+                    else if(str.substring(0,5).equals("false")){
+                        String[] strs  = str.substring(20,str.length()).split(", ");
                         for(int i=0;i<strs.length;i++)
                             forImgsSelected.add(Integer.valueOf(strs[i]));
                         //add to imgsSelected
                         ConvertForImgsSelected();
-                        if(str.substring(13,26).equals(getLocalIpAddress()))
+                        if(str.substring(6,19).equals(getLocalIpAddress()))
                             NOTSETeffect();
                         else {
                             imgsSelected.clear();
@@ -395,7 +376,7 @@ public class JoinActivity extends AppCompatActivity {
                     if(selectedCount==3){
                         addSelected();
                         ConvertImgsSelected();
-                        ClientSend("client "+getLocalIpAddress()+" "+forImgsSelected.toString());
+                        ClientSend(getLocalIpAddress()+" "+forImgsSelected.toString());
                     }
                 }
                 else
@@ -585,7 +566,7 @@ public class JoinActivity extends AppCompatActivity {
                 forImgsSelected.clear();
 
                 //recover the tips function
-                tips.setOnClickListener(new JoinActivity.tipsClick());
+                //tips.setOnClickListener(new JoinActivity.tipsClick());
             }
         }, 1500);
 
@@ -603,7 +584,7 @@ public class JoinActivity extends AppCompatActivity {
     }
 
     private void UNfreezeAll(){
-        tips.setClickable(true);
+        tips.setOnClickListener(new JoinActivity.tipsClick());
         for(int i=0;i<12;i++)
             imgs[i].setClickable(true);
         if(imgs[12]!=null){
