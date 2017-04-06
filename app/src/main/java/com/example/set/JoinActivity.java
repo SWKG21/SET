@@ -220,6 +220,8 @@ public class JoinActivity extends AppCompatActivity {
                         }, 1000);
                     }
                     else if(str.substring(0,4).equals("true")){
+                        imgsSelected.clear();
+                        forImgsSelected.clear();
                         String[] strs  = str.substring(19,str.length()).split(", ");
                         for(int i=0;i<strs.length;i++)
                             forImgsSelected.add(Integer.valueOf(strs[i]));
@@ -231,6 +233,8 @@ public class JoinActivity extends AppCompatActivity {
                             SETeffect();
                     }
                     else if(str.substring(0,5).equals("false")){
+                        imgsSelected.clear();
+                        forImgsSelected.clear();
                         String[] strs  = str.substring(20,str.length()).split(", ");
                         for(int i=0;i<strs.length;i++)
                             forImgsSelected.add(Integer.valueOf(strs[i]));
@@ -243,8 +247,6 @@ public class JoinActivity extends AppCompatActivity {
                             forImgsSelected.clear();
                         }
                     }
-                    else
-                        ;
                     break;
                 case 0:
                     displayToast("CONNEXION SUCCESS");
@@ -508,15 +510,19 @@ public class JoinActivity extends AppCompatActivity {
             @Override
             public void run() {
 
-                //recover the color of 3 cards
+                //recover the color and status of all 12 cards rather than 3, because this 3 may be different with the 3 that server chooses
+                /*//recover the color of 3 cards
                 imgsSelected.get(0).setBackgroundColor(Color.WHITE);
                 imgsSelected.get(1).setBackgroundColor(Color.WHITE);
                 imgsSelected.get(2).setBackgroundColor(Color.WHITE);
-
                 //recover the status of selected cards
                 imgsSelected.get(0).setSelected(false);
                 imgsSelected.get(1).setSelected(false);
-                imgsSelected.get(2).setSelected(false);
+                imgsSelected.get(2).setSelected(false);*/
+                for(int i=0;i<12;i++) {
+                    imgs[i].setBackgroundColor(Color.WHITE);
+                    imgs[i].setSelected(false);
+                }
 
                 //12(3 new) or 12(3 new)+3(new)=15 or 15-3(selected)=12 or 15-3(selected)+3(new)=15
                 showThreeNewCards();

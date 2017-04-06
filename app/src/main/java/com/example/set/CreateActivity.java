@@ -278,30 +278,35 @@ public class CreateActivity extends AppCompatActivity {
                 String s = "Score : "+score;
                 textScore.setText(s);
 
-                while(!resultList.isEmpty()){
-                    Pair<String, String> res = resultList.poll();
-                    String[] strs  = res.second.split(", ");
-                    for(int i=0;i<strs.length;i++)
-                        forImgsSelected.add(Integer.valueOf(strs[i]));
-                    //add to imgsSelected
-                    ConvertForImgsSelected();
-                    if(checkSET()) {
-                        ServerSend("true "+res.first+" "+res.second);
-                        if(res.first.equals(getLocalIpAddress()))
-                            selfSETeffect();
-                        else
-                            SETeffect();
-                        resultList.clear();
-                    }
-                    else {
-                        ServerSend("false " + res.first + " " + res.second);
-                        if(res.first.equals(getLocalIpAddress()))
-                            NOTSETeffect();
-                        else{
-                            imgsSelected.clear();
-                            forImgsSelected.clear();
+                myLock.lock();
+                try{
+                    while(!resultList.isEmpty()){
+                        Pair<String, String> res = resultList.poll();
+                        String[] strs  = res.second.split(", ");
+                        for(int i=0;i<strs.length;i++)
+                            forImgsSelected.add(Integer.valueOf(strs[i]));
+                        //add to imgsSelected
+                        ConvertForImgsSelected();
+                        if(checkSET()) {
+                            ServerSend("true "+res.first+" "+res.second);
+                            if(res.first.equals(getLocalIpAddress()))
+                                selfSETeffect();
+                            else
+                                SETeffect();
+                            resultList.clear();
+                        }
+                        else {
+                            ServerSend("false "+res.first+" "+res.second);
+                            if(res.first.equals(getLocalIpAddress()))
+                                NOTSETeffect();
+                            else{
+                                imgsSelected.clear();
+                                forImgsSelected.clear();
+                            }
                         }
                     }
+                } finally {
+                    myLock.unlock();
                 }
 
                 handler.postDelayed(this, 1000);
@@ -584,15 +589,19 @@ public class CreateActivity extends AppCompatActivity {
             @Override
             public void run() {
 
-                //recover the color of 3 cards
+                //recover the color and status of all 12 cards rather than 3, because this 3 may be different with the 3 that server chooses
+                /*//recover the color of 3 cards
                 imgsSelected.get(0).setBackgroundColor(Color.WHITE);
                 imgsSelected.get(1).setBackgroundColor(Color.WHITE);
                 imgsSelected.get(2).setBackgroundColor(Color.WHITE);
-
                 //recover the status of selected cards
                 imgsSelected.get(0).setSelected(false);
                 imgsSelected.get(1).setSelected(false);
-                imgsSelected.get(2).setSelected(false);
+                imgsSelected.get(2).setSelected(false);*/
+                for(int i=0;i<12;i++) {
+                    imgs[i].setBackgroundColor(Color.WHITE);
+                    imgs[i].setSelected(false);
+                }
 
                 //12(3 new) or 12(3 new)+3(new)=15 or 15-3(selected)=12 or 15-3(selected)+3(new)=15
                 showThreeNewCards();
