@@ -566,6 +566,7 @@ public class CreateActivity extends AppCompatActivity {
 
                 //reclickable all 12 cards
                 selectedCount = 0;
+                UNfreezeAll();
 
                 //clear the list of selected card
                 imgsSelected.clear();
@@ -608,6 +609,7 @@ public class CreateActivity extends AppCompatActivity {
 
                 //reclickable all 12 cards
                 selectedCount = 0;
+                UNfreezeAll();
 
                 //clear the list of selected card
                 imgsSelected.clear();
@@ -619,8 +621,6 @@ public class CreateActivity extends AppCompatActivity {
                 tips.setOnClickListener(new CreateActivity.tipsClick());
             }
         }, 1500);
-
-        UNfreezeAll();
     }
 
     private void NOTSETeffect(){
