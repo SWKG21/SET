@@ -1,3 +1,21 @@
-# SET
-This is a project of a card game.
-The play rules are in the introduction. There is also a chinese version.
+# SET-multiplayer
+
+This is a project of course "Parallel and Distributed Programming / Programmation Concurrente et Distribuée" at École Polytechnique.
+
+It is realized in Android Studio by Wang SUN and Chenxi HOU.
+
+Main steps:
+
+• Realize the game for the single player.
+
+• Implement the connection between server and client via Socket.
+
+• Realize the multi-threads functionality for the version of multiplayer.
+
+Files:
+
+• app/src/main/ contains all source codes.
+
+• app/src/app-release.apk is the apk package to install in a Android phone.
+
+• 游戏SET.pdf is the explanation of rules in chinese.
