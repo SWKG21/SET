@@ -2,7 +2,7 @@
 
 This is a project of course "Parallel and Distributed Programming / Programmation Concurrente et Distribuée" at École Polytechnique.
 
-It is realized in Android Studio by Wang SUN and Chenxi HOU.
+It is realized in Android Studio by Wang SUN.
 
 Main steps:
 
