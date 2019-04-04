@@ -14,8 +14,8 @@ Main steps:
 
 Files:
 
-• app/src/main/ contains all source codes.
+• `app/src/main/` contains all source codes.
 
-• app/src/app-release.apk is the apk package to install in an Android phone.
+• `app/src/app-release.apk` is the apk package to install in an Android phone.
 
-• 游戏SET.pdf is the explanation of rules in chinese.
+• `游戏SET.pdf` is the explanation of rules in chinese.
