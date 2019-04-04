@@ -1,6 +1,6 @@
 # SET-multiplayer
 
-This is a project of course "Parallel and Distributed Programming / Programmation Concurrente et Distribuée" at École Polytechnique.
+This is a project of course "Parallel and Distributed Programming" at École Polytechnique.
 
 It is realized in Android Studio by Wang SUN.
 
@@ -16,6 +16,6 @@ Files:
 
 • app/src/main/ contains all source codes.
 
-• app/src/app-release.apk is the apk package to install in a Android phone.
+• app/src/app-release.apk is the apk package to install in an Android phone.
 
 • 游戏SET.pdf is the explanation of rules in chinese.
