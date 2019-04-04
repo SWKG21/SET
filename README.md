@@ -1,4 +1,4 @@
-# SET-multiplayer
+# SET multiplayer
 
 This is a project of course "Parallel and Distributed Programming" at École Polytechnique.
 
