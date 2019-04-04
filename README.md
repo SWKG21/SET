@@ -6,11 +6,11 @@ It is realized in Android Studio by Wang SUN.
 
 Main steps:
 
-• Realize the game for the single player.
+    • Realize the game for the single player.
 
-• Implement the connection between server and client via Socket.
+    • Implement the connection between server and client via Socket.
 
-• Realize the multi-threads functionality for the version of multiplayer.
+    • Realize the multi-threads functionality for the version of multiplayer.
 
 Files:
 
